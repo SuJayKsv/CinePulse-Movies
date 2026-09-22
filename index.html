@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CinePulse - Modern Movie Ticket Booking</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0b0f19',
+                        darkCard: '#111827',
+                        darkBorder: '#1f2937',
+                        primary: '#f43f5e',
+                        primaryHover: '#e11d48',
+                        accent: '#8b5cf6'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Canvas Confetti for booking success -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-nav { background: rgba(11, 15, 25, 0.85); backdrop-filter: blur(12px); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.03); }
+        }
+        .screen-glow { animation: pulseGlow 4s infinite ease-in-out; }
+    </style>
+</head>
+<body class="bg-darkBg text-slate-100 min-h-screen selection:bg-rose-500 selection:text-white flex flex-col justify-between">
+
+    <!-- Navigation Bar -->
+    <header class="sticky top-0 z-50 glass-nav border-b border-darkBorder">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="navigateTo('home')">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-600 to-purple-600 flex items-center justify-center shadow-lg shadow-rose-600/30">
+                    <i data-lucide="film" class="w-6 h-6 text-white"></i>
+                </div>
+                <span class="text-2xl font-black tracking-wider bg-gradient-to-r from-rose-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent">CINEPULSE</span>
+            </div>
+            
+            <div class="hidden md:flex items-center space-x-8 text-sm font-medium">
+                <button onclick="navigateTo('home')" class="text-rose-500 hover:text-rose-400 transition">Movies</button>
+                <a href="#cinemas" class="text-slate-400 hover:text-slate-200 transition">Cinemas</a>
+                <a href="#offers" class="text-slate-400 hover:text-slate-200 transition">Offers</a>
+                <a href="#about" class="text-slate-400 hover:text-slate-200 transition">About Us</a>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <div class="relative hidden sm:block">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                        <i data-lucide="search" class="w-4 h-4"></i>
+                    </span>
+                    <input type="text" id="globalSearch" placeholder="Search movies..." oninput="handleSearch(this.value)" class="bg-darkCard border border-darkBorder text-sm rounded-full pl-10 pr-4 py-2 w-48 lg:w-64 focus:outline-none focus:border-rose-500 text-slate-200 placeholder-slate-500 transition">
+                </div>
+                <button onclick="openMyTicketsModal()" class="relative p-2.5 rounded-full bg-darkCard border border-darkBorder text-slate-300 hover:text-white hover:border-rose-500 transition flex items-center gap-2 px-4">
+                    <i data-lucide="ticket" class="w-4 h-4 text-rose-500"></i>
+                    <span class="text-xs font-semibold hidden sm:inline">My Tickets</span>
+                    <span id="ticketCountBadge" class="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-md hidden">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+
+        <!-- VIEW 1: HOME / MOVIE CATALOG -->
+        <div id="viewHome" class="space-y-8">
+            <!-- Hero Banner Slider -->
+            <div class="relative rounded-3xl overflow-hidden bg-gradient-to-r from-slate-900 to-purple-950 border border-darkBorder shadow-2xl">
+                <div class="absolute inset-0 opacity-40 bg-cover bg-center transition-all duration-1000" id="heroBg" style="background-image: url('https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80&w=1600')"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-darkBg via-darkBg/60 to-transparent"></div>
+                
+                <div class="relative z-10 p-8 sm:p-12 lg:p-16 max-w-2xl flex flex-col justify-end min-h-[400px] sm:min-h-[480px]">
+                    <div class="flex items-center space-x-2 mb-3">
+                        <span id="heroBadge" class="px-3 py-1 bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-full text-xs font-semibold uppercase tracking-wider">Now Showing • IMAX 3D</span>
+                        <span class="flex items-center text-amber-400 text-xs font-bold gap-1 bg-black/40 px-2.5 py-1 rounded-full"><i data-lucide="star" class="w-3.5 h-3.5 fill-current"></i> <span id="heroRating">4.9</span></span>
+                    </div>
+                    <h1 id="heroTitle" class="text-3xl sm:text-5xl font-black text-white tracking-tight mb-3">Interstellar Odyssey</h1>
+                    <p id="heroDesc" class="text-slate-300 text-sm sm:text-base line-clamp-2 mb-6">A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.</p>
+                    <div class="flex items-center space-x-4">
+                        <button onclick="openMovieDetail(heroMovieId)" class="px-6 py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl shadow-lg shadow-rose-600/40 flex items-center space-x-2 transition transform hover:scale-105">
+                            <i data-lucide="play" class="w-5 h-5 fill-current"></i>
+                            <span>Book Tickets</span>
+                        </button>
+                        <button onclick="openTrailerModal(heroTrailerUrl)" class="px-6 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white font-semibold rounded-xl border border-white/10 flex items-center space-x-2 transition">
+                            <i data-lucide="film" class="w-5 h-5"></i>
+                            <span>Watch Trailer</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters & Genre Tabs -->
+            <div class="space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                        <i data-lucide="clapperboard" class="w-6 h-6 text-rose-500"></i>
+                        Explore Movies
+                    </h2>
+                    
+                    <!-- Language & Format Filter -->
+                    <div class="flex items-center space-x-2 overflow-x-auto pb-2 sm:pb-0 hide-scrollbar">
+                        <button onclick="filterByFormat('ALL')" id="filterBtnALL" class="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 text-white transition whitespace-nowrap">All Movies</button>
+                        <button onclick="filterByFormat('IMAX')" id="filterBtnIMAX" class="px-4 py-2 rounded-xl text-xs font-semibold bg-darkCard border border-darkBorder text-slate-400 hover:text-white transition whitespace-nowrap">IMAX</button>
+                        <button onclick="filterByFormat('3D')" id="filterBtn3D" class="px-4 py-2 rounded-xl text-xs font-semibold bg-darkCard border border-darkBorder text-slate-400 hover:text-white transition whitespace-nowrap">3D Digital</button>
+                        <button onclick="filterByFormat('4DX')" id="filterBtn4DX" class="px-4 py-2 rounded-xl text-xs font-semibold bg-darkCard border border-darkBorder text-slate-400 hover:text-white transition whitespace-nowrap">4DX</button>
+                    </div>
+                </div>
+
+                <!-- Genre Pills -->
+                <div class="flex items-center space-x-2 overflow-x-auto pb-2 hide-scrollbar" id="genrePillsContainer">
+                    <button onclick="filterByGenre('All')" class="genre-pill px-4 py-1.5 rounded-lg text-xs font-medium bg-rose-500 text-white transition whitespace-nowrap">All Genres</button>
+                    <button onclick="filterByGenre('Action')" class="genre-pill px-4 py-1.5 rounded-lg text-xs font-medium bg-darkCard border border-darkBorder text-slate-400 hover:text-white transition whitespace-nowrap">Action</button>
+                    <button onclick="filterByGenre('Sci-Fi')" class="genre-pill px-4 py-1.5 rounded-lg text-xs font-medium bg-darkCard border border-darkBorder text-slate-400 hover:text-white transition whitespace-nowrap">Sci-Fi</button>
+                    <button onclick="filterByGenre('Drama')" class="genre-pill px-4 py-1.5 rounded-lg text-xs font-medium bg-darkCard border border-darkBorder text-slate-400 hover:text-white transition whitespace-nowrap">Drama</button>
+                    <button onclick="filterByGenre('Animation')" class="genre-pill px-4 py-1.5 rounded-lg text-xs font-medium bg-darkCard border border-darkBorder text-slate-400 hover:text-white transition whitespace-nowrap">Animation</button>
+                    <button onclick="filterByGenre('Horror')" class="genre-pill px-4 py-1.5 rounded-lg text-xs font-medium bg-darkCard border border-darkBorder text-slate-400 hover:text-white transition whitespace-nowrap">Horror</button>
+                    <button onclick="filterByGenre('Thriller')" class="genre-pill px-4 py-1.5 rounded-lg text-xs font-medium bg-darkCard border border-darkBorder text-slate-400 hover:text-white transition whitespace-nowrap">Thriller</button>
+                </div>
+            </div>
+
+            <!-- Movie Catalog Grid -->
+            <div id="movieGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <!-- Dynamically populated via JS -->
+            </div>
+        </div>
+
+        <!-- VIEW 2: SHOWTIME & SEAT SELECTION -->
+        <div id="viewBooking" class="hidden space-y-8">
+            <button onclick="navigateTo('home')" class="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-darkCard border border-darkBorder text-slate-300 hover:text-white hover:border-rose-500 transition text-sm font-semibold">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                <span>Back to Movies</span>
+            </button>
+
+            <!-- Booking Progress Steps -->
+            <div class="flex items-center justify-center max-w-xl mx-auto mb-6">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 rounded-full bg-rose-600 text-white flex items-center justify-center font-bold text-xs">1</div>
+                        <span class="text-sm font-semibold text-white">Showtime</span>
+                    </div>
+                    <div class="w-12 h-0.5 bg-rose-600"></div>
+                    <div class="flex items-center space-x-2">
+                        <div id="step2Indicator" class="w-8 h-8 rounded-full bg-darkCard border border-darkBorder text-slate-400 flex items-center justify-center font-bold text-xs">2</div>
+                        <span id="step2Text" class="text-sm font-semibold text-slate-400">Seats</span>
+                    </div>
+                    <div class="w-12 h-0.5 bg-darkBorder"></div>
+                    <div class="flex items-center space-x-2">
+                        <div id="step3Indicator" class="w-8 h-8 rounded-full bg-darkCard border border-darkBorder text-slate-400 flex items-center justify-center font-bold text-xs">3</div>
+                        <span id="step3Text" class="text-sm font-semibold text-slate-400">Payment</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Left/Center: Showtime & Interactive Seat Selector -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Movie Summary Card -->
+                    <div class="bg-darkCard border border-darkBorder rounded-2xl p-5 flex items-center space-x-4 shadow-lg">
+                        <img id="bookingMoviePoster" src="" alt="Movie Poster" class="w-20 h-28 object-cover rounded-xl shadow-md">
+                        <div>
+                            <span id="bookingMovieFormat" class="px-2.5 py-0.5 bg-rose-500/20 text-rose-400 text-[10px] font-bold uppercase rounded-md border border-rose-500/30">IMAX</span>
+                            <h2 id="bookingMovieTitle" class="text-xl font-bold text-white mt-1">Movie Title</h2>
+                            <p id="bookingMovieGenre" class="text-xs text-slate-400 mt-0.5">Action • Sci-Fi • 2h 45m</p>
+                            <div class="flex items-center gap-3 mt-2 text-xs text-slate-300">
+                                <span class="flex items-center gap-1"><i data-lucide="calendar" class="w-3.5 h-3.5 text-rose-500"></i> <span id="selectedDateDisplay">Today, Oct 24</span></span>
+                                <span class="flex items-center gap-1"><i data-lucide="clock" class="w-3.5 h-3.5 text-rose-500"></i> <span id="selectedTimeDisplay">07:30 PM</span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 1: Date & Showtime Picker -->
+                    <div id="showtimeSelectionSection" class="bg-darkCard border border-darkBorder rounded-2xl p-6 space-y-6">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i data-lucide="calendar" class="w-5 h-5 text-rose-500"></i> Select Date & Showtime
+                        </h3>
+                        
+                        <!-- Date Selector -->
+                        <div class="grid grid-cols-4 sm:grid-cols-7 gap-3" id="dateSelectorContainer">
+                            <!-- Populated by JS -->
+                        </div>
+
+                        <!-- Showtime Pills -->
+                        <div class="space-y-3">
+                            <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Available Showtimes</h4>
+                            <div class="flex flex-wrap gap-3" id="showtimePillsContainer">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+
+                        <button onclick="proceedToSeatSelection()" class="w-full py-3.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl shadow-lg shadow-rose-600/30 transition flex items-center justify-center gap-2">
+                            <span>Proceed to Seat Selection</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+
+                    <!-- Step 2: Interactive Seat Map (Hidden Initially) -->
+                    <div id="seatSelectionSection" class="hidden bg-darkCard border border-darkBorder rounded-2xl p-6 space-y-8">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i data-lucide="armchair" class="w-5 h-5 text-rose-500"></i> Choose Your Seats
+                            </h3>
+                            <button onclick="backToShowtimes()" class="text-xs text-rose-400 hover:underline flex items-center gap-1">
+                                <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Change Showtime
+                            </button>
+                        </div>
+
+                        <!-- Screen Visual -->
+                        <div class="w-full flex flex-col items-center space-y-2">
+                            <div class="w-3/4 h-3 bg-gradient-to-r from-transparent via-rose-500 to-transparent rounded-full shadow-lg shadow-rose-500/50 screen-glow"></div>
+                            <span class="text-[10px] tracking-widest font-bold text-slate-500 uppercase">SCREEN THIS WAY</span>
+                        </div>
+
+                        <!-- Seat Legend -->
+                        <div class="flex flex-wrap items-center justify-center gap-6 text-xs text-slate-300 bg-darkBg/60 p-3 rounded-xl border border-darkBorder">
+                            <div class="flex items-center gap-2">
+                                <div class="w-4 h-4 rounded bg-darkBg border border-slate-600"></div>
+                                <span>Available ($12-$20)</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-4 h-4 rounded bg-rose-600"></div>
+                                <span>Selected</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-4 h-4 rounded bg-slate-800 opacity-40 cursor-not-allowed"></div>
+                                <span>Reserved</span>
+                            </div>
+                        </div>
+
+                        <!-- Seat Grid -->
+                        <div class="overflow-x-auto pb-4">
+                            <div class="min-w-[500px] space-y-6">
+                                <!-- VIP Section -->
+                                <div class="space-y-2">
+                                    <div class="flex justify-between text-xs font-semibold text-rose-400 uppercase tracking-wider border-b border-rose-500/20 pb-1">
+                                        <span>VIP Lounge Tier ($20.00)</span>
+                                        <span>Rows A - B</span>
+                                    </div>
+                                    <div id="seatRowVIP" class="space-y-2 flex flex-col items-center"></div>
+                                </div>
+
+                                <!-- Club Section -->
+                                <div class="space-y-2">
+                                    <div class="flex justify-between text-xs font-semibold text-purple-400 uppercase tracking-wider border-b border-purple-500/20 pb-1">
+                                        <span>Club Executive Tier ($16.00)</span>
+                                        <span>Rows C - E</span>
+                                    </div>
+                                    <div id="seatRowClub" class="space-y-2 flex flex-col items-center"></div>
+                                </div>
+
+                                <!-- Normal Section -->
+                                <div class="space-y-2">
+                                    <div class="flex justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-700 pb-1">
+                                        <span>Regular Classic Tier ($12.00)</span>
+                                        <span>Rows F - H</span>
+                                    </div>
+                                    <div id="seatRowNormal" class="space-y-2 flex flex-col items-center"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Sidebar: Live Bill & Checkout Summary -->
+                <div class="space-y-6">
+                    <div class="bg-darkCard border border-darkBorder rounded-2xl p-6 shadow-xl sticky top-28 space-y-6">
+                        <h3 class="text-lg font-bold text-white border-b border-darkBorder pb-4 flex items-center justify-between">
+                            <span>Booking Summary</span>
+                            <i data-lucide="receipt" class="w-5 h-5 text-rose-500"></i>
+                        </h3>
+
+                        <div class="space-y-3 text-sm">
+                            <div class="flex justify-between text-slate-400">
+                                <span>Movie:</span>
+                                <span id="summaryMovieName" class="font-semibold text-white text-right truncate max-w-[180px]">Interstellar</span>
+                            </div>
+                            <div class="flex justify-between text-slate-400">
+                                <span>Cinema:</span>
+                                <span class="font-semibold text-white">CinePulse IMAX Downtown</span>
+                            </div>
+                            <div class="flex justify-between text-slate-400">
+                                <span>Date & Time:</span>
+                                <span id="summaryDateTime" class="font-semibold text-white">Oct 24, 07:30 PM</span>
+                            </div>
+                            <div class="flex justify-between text-slate-400">
+                                <span>Selected Seats:</span>
+                                <span id="summarySeats" class="font-semibold text-rose-400 text-right">None Selected</span>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-darkBorder pt-4 space-y-2">
+                            <div class="flex justify-between text-slate-400 text-sm">
+                                <span>Subtotal</span>
+                                <span id="summarySubtotal">$0.00</span>
+                            </div>
+                            <div class="flex justify-between text-slate-400 text-sm">
+                                <span>Convenience Fees (GST)</span>
+                                <span id="summaryFee">$0.00</span>
+                            </div>
+                            <div class="flex justify-between text-lg font-black text-white pt-2 border-t border-darkBorder">
+                                <span>Total Amount</span>
+                                <span id="summaryTotal" class="text-rose-500">$0.00</span>
+                            </div>
+                        </div>
+
+                        <button id="proceedToPaymentBtn" onclick="openCheckoutModal()" disabled class="w-full py-4 bg-rose-600/50 cursor-not-allowed hover:bg-rose-500 text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+                            <i data-lucide="lock" class="w-4 h-4"></i>
+                            <span>Proceed to Payment</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- TRAILER MODAL -->
+    <div id="trailerModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="relative w-full max-w-4xl bg-darkCard border border-darkBorder rounded-3xl overflow-hidden shadow-2xl">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-darkBorder">
+                <h3 id="trailerTitle" class="font-bold text-white text-lg">Watch Trailer</h3>
+                <button onclick="closeTrailerModal()" class="p-2 text-slate-400 hover:text-white rounded-full bg-darkBg border border-darkBorder"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="relative aspect-video w-full bg-black flex items-center justify-center">
+                <iframe id="trailerIframe" class="w-full h-full" src="" title="Movie Trailer" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- MOVIE DETAIL MODAL -->
+    <div id="movieDetailModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="relative w-full max-w-3xl bg-darkCard border border-darkBorder rounded-3xl overflow-hidden shadow-2xl my-8">
+            <div class="relative h-72 sm:h-96 w-full">
+                <img id="modalBackdrop" src="" alt="Backdrop" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-darkCard via-darkCard/40 to-transparent"></div>
+                <button onclick="closeMovieDetailModal()" class="absolute top-4 right-4 p-2 text-white rounded-full bg-black/60 hover:bg-rose-600 transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6 sm:p-8 -mt-24 relative z-10 space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-end gap-6">
+                    <img id="modalPoster" src="" alt="Poster" class="w-32 h-48 object-cover rounded-2xl shadow-xl border-2 border-darkBorder">
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <span id="modalFormatBadge" class="px-2.5 py-0.5 bg-rose-500/20 text-rose-400 text-xs font-bold uppercase rounded-md border border-rose-500/30">IMAX 3D</span>
+                            <span class="flex items-center text-amber-400 text-sm font-bold gap-1"><i data-lucide="star" class="w-4 h-4 fill-current"></i> <span id="modalRating">4.9</span></span>
+                        </div>
+                        <h2 id="modalTitle" class="text-2xl sm:text-4xl font-black text-white">Movie Title</h2>
+                        <p id="modalGenreDuration" class="text-sm text-slate-400">Action • Sci-Fi • 2h 45m • PG-13</p>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="text-xs font-semibold uppercase tracking-wider text-rose-400">Synopsis</h4>
+                    <p id="modalDescription" class="text-slate-300 text-sm sm:text-base leading-relaxed">Detailed synopsis goes here...</p>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-darkBorder">
+                    <div>
+                        <span class="text-xs text-slate-500 block">Director</span>
+                        <span id="modalDirector" class="text-sm font-semibold text-white">Christopher Nolan</span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-slate-500 block">Cast</span>
+                        <span id="modalCast" class="text-sm font-semibold text-white truncate block">Matthew McConaughey, Anne Hathaway</span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-slate-500 blockLanguage">Languages</span>
+                        <span class="text-sm font-semibold text-white">English, Spanish Sub</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-4 pt-4">
+                    <button id="modalBookBtn" onclick="" class="flex-1 py-4 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl shadow-lg shadow-rose-600/30 transition flex items-center justify-center gap-2">
+                        <i data-lucide="ticket" class="w-5 h-5"></i>
+                        <span>Select Showtime & Book</span>
+                    </button>
+                    <button id="modalTrailerBtn" onclick="" class="px-6 py-4 bg-darkBg hover:bg-darkBorder border border-darkBorder text-white font-semibold rounded-xl transition flex items-center gap-2">
+                        <i data-lucide="film" class="w-5 h-5"></i>
+                        <span>Trailer</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHECKOUT & PAYMENT SIMULATION MODAL -->
+    <div id="checkoutModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="relative w-full max-w-lg bg-darkCard border border-darkBorder rounded-3xl overflow-hidden shadow-2xl p-6 sm:p-8 space-y-6">
+            <div class="flex items-center justify-between border-b border-darkBorder pb-4">
+                <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i data-lucide="credit-card" class="w-6 h-6 text-rose-500"></i> Secure Checkout
+                </h3>
+                <button onclick="closeCheckoutModal()" class="p-2 text-slate-400 hover:text-white rounded-full bg-darkBg border border-darkBorder"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <!-- Payment Methods Tabs -->
+            <div class="grid grid-cols-3 gap-3">
+                <button onclick="selectPaymentMethod('card')" id="payMethodCard" class="p-3 rounded-xl border border-rose-500 bg-rose-500/10 text-white font-semibold text-xs flex flex-col items-center gap-2 transition">
+                    <i data-lucide="credit-card" class="w-5 h-5 text-rose-500"></i>
+                    <span>Credit Card</span>
+                </button>
+                <button onclick="selectPaymentMethod('upi')" id="payMethodUpi" class="p-3 rounded-xl border border-darkBorder bg-darkBg text-slate-400 font-semibold text-xs flex flex-col items-center gap-2 transition hover:border-slate-600">
+                    <i data-lucide="smartphone" class="w-5 h-5"></i>
+                    <span>UPI / QR</span>
+                </button>
+                <button onclick="selectPaymentMethod('wallet')" id="payMethodWallet" class="p-3 rounded-xl border border-darkBorder bg-darkBg text-slate-400 font-semibold text-xs flex flex-col items-center gap-2 transition hover:border-slate-600">
+                    <i data-lucide="wallet" class="w-5 h-5"></i>
+                    <span>Wallets</span>
+                </button>
+            </div>
+
+            <!-- Payment Forms -->
+            <div id="paymentFormCard" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Cardholder Name</label>
+                    <input type="text" placeholder="Alex Morgan" class="w-full bg-darkBg border border-darkBorder rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-rose-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Card Number</label>
+                    <input type="text" placeholder="4532 •••• •••• 8892" class="w-full bg-darkBg border border-darkBorder rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-rose-500">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Expiry Date</label>
+                        <input type="text" placeholder="MM/YY" class="w-full bg-darkBg border border-darkBorder rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-rose-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">CVV Code</label>
+                        <input type="password" placeholder="123" class="w-full bg-darkBg border border-darkBorder rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-rose-500">
+                    </div>
+                </div>
+            </div>
+
+            <div id="paymentFormUpi" class="hidden space-y-4 text-center py-4">
+                <div class="w-36 h-36 mx-auto bg-white p-3 rounded-2xl flex items-center justify-center shadow-lg">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=CinePulseSecurePaymentUPI" alt="UPI QR Code" class="w-full h-full">
+                </div>
+                <p class="text-xs text-slate-400">Scan with any UPI App (GPay, PhonePe, Paytm)</p>
+            </div>
+
+            <div id="paymentFormWallet" class="hidden space-y-3">
+                <div class="p-3 rounded-xl border border-darkBorder bg-darkBg flex items-center justify-between cursor-pointer hover:border-rose-500">
+                    <span class="text-sm font-semibold text-white">Apple Pay / Google Pay</span>
+                    <i data-lucide="check-circle" class="w-5 h-5 text-rose-500"></i>
+                </div>
+                <div class="p-3 rounded-xl border border-darkBorder bg-darkBg flex items-center justify-between cursor-pointer hover:border-rose-500">
+                    <span class="text-sm font-semibold text-white">PayPal Express</span>
+                    <i data-lucide="circle" class="w-5 h-5 text-slate-600"></i>
+                </div>
+            </div>
+
+            <div class="border-t border-darkBorder pt-4 flex items-center justify-between">
+                <div>
+                    <span class="text-xs text-slate-400 block">Total Payable</span>
+                    <span id="checkoutTotalAmount" class="text-xl font-black text-rose-500">$0.00</span>
+                </div>
+                <button onclick="processPayment()" id="payNowBtn" class="px-8 py-4 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl shadow-lg shadow-rose-600/40 transition flex items-center gap-2">
+                    <i data-lucide="shield-check" class="w-5 h-5"></i>
+                    <span>Pay Securely</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOOKING SUCCESS / TICKET MODAL -->
+    <div id="successTicketModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="relative w-full max-w-md bg-darkCard border border-darkBorder rounded-3xl overflow-hidden shadow-2xl p-6 sm:p-8 space-y-6 my-8">
+            <div class="text-center space-y-2">
+                <div class="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20">
+                    <i data-lucide="check" class="w-8 h-8"></i>
+                </div>
+                <h3 class="text-2xl font-black text-white">Booking Confirmed!</h3>
+                <p class="text-xs text-slate-400">Your ticket has been generated successfully. Enjoy your cinematic experience!</p>
+            </div>
+
+            <!-- Printable Ticket Card -->
+            <div id="printableTicket" class="bg-gradient-to-br from-slate-900 to-indigo-950 border border-slate-700 rounded-2xl p-5 space-y-4 shadow-2xl relative overflow-hidden">
+                <div class="absolute -right-10 -top-10 w-32 h-32 bg-rose-500/10 rounded-full blur-2xl"></div>
+                
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <span class="font-black tracking-wider text-rose-500">CINEPULSE PASS</span>
+                    <span id="ticketBookingId" class="text-[10px] font-mono text-slate-400">CP-982341</span>
+                </div>
+
+                <div class="flex gap-4">
+                    <img id="ticketPoster" src="" alt="Movie" class="w-16 h-24 object-cover rounded-xl shadow-md">
+                    <div class="space-y-1">
+                        <h4 id="ticketMovieTitle" class="font-bold text-white text-base">Interstellar Odyssey</h4>
+                        <p id="ticketCinema" class="text-xs text-slate-400">CinePulse IMAX Downtown</p>
+                        <div class="flex items-center gap-2 pt-1 text-xs font-semibold text-rose-400">
+                            <span id="ticketDate">Oct 24</span> • <span id="ticketTime">07:30 PM</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 pt-2 border-t border-slate-800 text-xs">
+                    <div>
+                        <span class="text-slate-500 block">SEATS</span>
+                        <span id="ticketSeatsList" class="font-bold text-white">VIP-A3, VIP-A4</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 block">TIER</span>
+                        <span class="font-bold text-white">VIP Lounge</span>
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-slate-800 flex items-center justify-between">
+                    <div class="w-20 h-20 bg-white p-1 rounded-lg">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=CinePulseConfirmedTicketQR" alt="QR" class="w-full h-full">
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[10px] text-slate-500 block">TOTAL PAID</span>
+                        <span id="ticketTotalPrice" class="text-lg font-black text-emerald-400">$40.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <button onclick="downloadTicketReceipt()" class="flex-1 py-3 bg-darkBg hover:bg-darkBorder border border-darkBorder text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-2 transition">
+                    <i data-lucide="download" class="w-4 h-4"></i> Download Ticket
+                </button>
+                <button onclick="navigateTo('home')" class="flex-1 py-3 bg-rose-600 hover:bg-rose-500 text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-2 transition">
+                    <i data-lucide="home" class="w-4 h-4"></i> Done / Home
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MY TICKETS DRAWER / MODAL -->
+    <div id="myTicketsModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="relative w-full max-w-xl bg-darkCard border border-darkBorder rounded-3xl overflow-hidden shadow-2xl p-6 sm:p-8 space-y-6 max-h-[85vh] flex flex-col">
+            <div class="flex items-center justify-between border-b border-darkBorder pb-4">
+                <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i data-lucide="ticket" class="w-6 h-6 text-rose-500"></i> My Booked Tickets (<span id="myTicketsCount">0</span>)
+                </h3>
+                <button onclick="closeMyTicketsModal()" class="p-2 text-slate-400 hover:text-white rounded-full bg-darkBg border border-darkBorder"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <div id="myTicketsListContainer" class="overflow-y-auto space-y-4 flex-grow pr-2">
+                <!-- Dynamically populated -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-darkCard border-t border-darkBorder mt-16 py-12 text-slate-400 text-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div class="space-y-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-rose-600 to-purple-600 flex items-center justify-center shadow-lg shadow-rose-600/30">
+                        <i data-lucide="film" class="w-4 h-4 text-white"></i>
+                    </div>
+                    <span class="text-xl font-black tracking-wider text-white">CINEPULSE</span>
+                </div>
+                <p class="text-xs text-slate-500 leading-relaxed">The ultimate next-generation movie ticket booking experience with immersive soundscapes, VIP lounges, and instant digital QR passes.</p>
+            </div>
+            <div>
+                <h4 class="font-bold text-white text-xs uppercase tracking-wider mb-3">Movies & Shows</h4>
+                <ul class="space-y-2 text-xs">
+                    <li><a href="#" class="hover:text-rose-500 transition">Now Showing</a></li>
+                    <li><a href="#" class="hover:text-rose-500 transition">Coming Soon</a></li>
+                    <li><a href="#" class="hover:text-rose-500 transition">IMAX 3D Experience</a></li>
+                    <li><a href="#" class="hover:text-rose-500 transition">4DX Dolby Atmos</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold text-white text-xs uppercase tracking-wider mb-3">Cinemas</h4>
+                <ul class="space-y-2 text-xs">
+                    <li><a href="#" class="hover:text-rose-500 transition">Downtown IMAX Center</a></li>
+                    <li><a href="#" class="hover:text-rose-500 transition">Grand Metro Multiplex</a></li>
+                    <li><a href="#" class="hover:text-rose-500 transition">Suburban Cineplex</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold text-white text-xs uppercase tracking-wider mb-3">Newsletter</h4>
+                <p class="text-xs text-slate-500 mb-3">Subscribe for weekly releases, VIP premiere invites, and exclusive promo codes.</p>
+                <div class="flex items-center">
+                    <input type="email" placeholder="your@email.com" class="bg-darkBg border border-darkBorder rounded-l-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500 w-full">
+                    <button onclick="subscribeNewsletter()" class="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-r-xl text-xs font-semibold transition">Join</button>
+                </div>
+            </div>
+        </div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-6 border-t border-darkBorder flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500">
+            <p>&copy; 2026 CinePulse Entertainment Inc. All rights reserved.</p>
+            <div class="flex space-x-6 mt-4 sm:mt-0">
+                <a href="#" class="hover:text-slate-300">Privacy Policy</a>
+                <a href="#" class="hover:text-slate-300">Terms of Service</a>
+                <a href="#" class="hover:text-slate-300">Support</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // --- MOVIE DATABASE ---
+        const moviesData = [
+            {
+                id: 1,
+                title: "Interstellar Odyssey",
+                genre: "Sci-Fi",
+                format: "IMAX",
+                rating: 4.9,
+                duration: "2h 49m",
+                poster: "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&q=80&w=800",
+                backdrop: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80&w=1600",
+                synopsis: "A team of elite astronauts journey through a newly discovered wormhole in search of a habitable planet to secure humanity's future amidst a collapsing Earth.",
+                director: "Christopher Nolan",
+                cast: "Matthew McConaughey, Anne Hathaway, Jessica Chastain",
+                trailerUrl: "https://www.youtube.com/embed/zSWdZVtXT7E"
+            },
+            {
+                id: 2,
+                title: "Cyberpunk: Neon Syndicate",
+                genre: "Action",
+                format: "4DX",
+                rating: 4.7,
+                duration: "2h 15m",
+                poster: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=800",
+                backdrop: "https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&q=80&w=1600",
+                synopsis: "In a rain-drenched megacity governed by corrupt corporate dynasties, an augmented street samurai uncovers a conspiracy that threatens the digital soul of mankind.",
+                director: "Denis Villeneuve",
+                cast: "Keanu Reeves, Anya Taylor-Joy, Idris Elba",
+                trailerUrl: "https://www.youtube.com/embed/X2gB9j7t1u0"
+            },
+            {
+                id: 3,
+                title: "The Silent Abyss",
+                genre: "Thriller",
+                format: "3D",
+                rating: 4.5,
+                duration: "1h 58m",
+                poster: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&q=80&w=800",
+                backdrop: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=1600",
+                synopsis: "Deep sea researchers stationed in the Mariana Trench encounter an ancient intelligence awakened by submersible drilling.",
+                director: "Guillermo del Toro",
+                cast: "Florence Pugh, Oscar Isaac, Javier Bardem",
+                trailerUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ"
+            },
+            {
+                id: 4,
+                title: "Realm of Legends: Awakening",
+                genre: "Animation",
+                format: "3D",
+                rating: 4.8,
+                duration: "1h 42m",
+                poster: "https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&q=80&w=800",
+                backdrop: "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&q=80&w=1600",
+                synopsis: "A young mystic elf embarks on a celestial quest across floating archipelagoes to mend the broken Crystal of Eternity.",
+                director: "Hayao Miyazaki",
+                cast: "Tom Holland, Zendaya, Jack Black",
+                trailerUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ"
+            },
+            {
+                id: 5,
+                title: "Midnight Shadows",
+                genre: "Horror",
+                format: "IMAX",
+                rating: 4.3,
+                duration: "1h 50m",
+                poster: "https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&q=80&w=800",
+                backdrop: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=1600",
+                synopsis: "An estranged family inherits an isolated Victorian mansion nestled in the misty moors, only to discover whispering walls and locked cellar doors.",
+                director: "Ari Aster",
+                cast: "Mia Goth, Willem Dafoe, Anya Taylor-Joy",
+                trailerUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ"
+            },
+            {
+                id: 6,
+                title: "Echoes of Eternity",
+                genre: "Drama",
+                format: "3D",
+                rating: 4.6,
+                duration: "2h 10m",
+                poster: "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=800",
+                backdrop: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80&w=1600",
+                synopsis: "A poignant time-bending romance chronicling two souls who meet in different decades across the changing skyline of Paris.",
+                director: "Greta Gerwig",
+                cast: "Timothée Chalamet, Saoirse Ronan",
+                trailerUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ"
+            }
+        ];
+
+        let currentFilterFormat = 'ALL';
+        let currentFilterGenre = 'All';
+        let searchQuery = '';
+
+        let heroMovieId = 1;
+        let heroTrailerUrl = moviesData[0].trailerUrl;
+
+        // Active Booking State
+        let activeMovie = null;
+        let selectedDate = '2026-10-24';
+        let selectedTime = '07:30 PM';
+        let selectedSeats = []; // Array of seat IDs e.g. "VIP-A3"
+        let reservedSeats = ['VIP-A1', 'Club-C4', 'Club-C5', 'Norm-F8', 'Norm-F9'];
+        let bookedTicketsHistory = JSON.parse(localStorage.getItem('cinepulse_tickets') || '[]');
+
+        // Initialize Lucide Icons
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            renderMovies();
+            updateHeroBanner();
+            initDateSelector();
+            initShowtimes();
+            initSeatGrid();
+            updateTicketBadge();
+        });
+
+        // --- NAVIGATION & VIEWS ---
+        function navigateTo(view) {
+            const homeView = document.getElementById('viewHome');
+            const bookingView = document.getElementById('viewBooking');
+            
+            if (view === 'home') {
+                homeView.classList.remove('hidden');
+                bookingView.classList.add('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else if (view === 'booking') {
+                homeView.classList.add('hidden');
+                bookingView.classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            lucide.createIcons();
+        }
+
+        // --- HERO BANNER & CATALOG ---
+        function updateHeroBanner() {
+            const hm = moviesData[0];
+            heroMovieId = hm.id;
+            heroTrailerUrl = hm.trailerUrl;
+            document.getElementById('heroBg').style.backgroundImage = `url('${hm.backdrop}')`;
+            document.getElementById('heroTitle').innerText = hm.title;
+            document.getElementById('heroDesc').innerText = hm.synopsis;
+            document.getElementById('heroRating').innerText = hm.rating;
+        }
+
+        function renderMovies() {
+            const grid = document.getElementById('movieGrid');
+            grid.innerHTML = '';
+
+            const filtered = moviesData.filter(m => {
+                const matchFormat = currentFilterFormat === 'ALL' || m.format === currentFilterFormat;
+                const matchGenre = currentFilterGenre === 'All' || m.genre === currentFilterGenre;
+                const matchSearch = m.title.toLowerCase().includes(searchQuery.toLowerCase()) || m.genre.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchFormat && matchGenre && matchSearch;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-16 text-center text-slate-500"><i data-lucide="film" class="w-12 h-12 mx-auto mb-3 opacity-40"></i><p class="text-base font-semibold">No movies found matching your filters.</p></div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            filtered.forEach(m => {
+                const card = document.createElement('div');
+                card.className = "bg-darkCard border border-darkBorder rounded-2xl overflow-hidden shadow-lg group hover:border-rose-500/50 transition duration-300 flex flex-col justify-between";
+                card.innerHTML = `
+                    <div class="relative aspect-[2/3] overflow-hidden cursor-pointer" onclick="openMovieDetail(${m.id})">
+                        <img src="${m.poster}" alt="${m.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" onerror="this.src='https://placehold.co/400x600/111827/ffffff?text=CinePulse'">
+                        <div class="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg text-xs font-bold text-amber-400 flex items-center gap-1 border border-white/10">
+                            <i data-lucide="star" class="w-3 h-3 fill-current"></i> ${m.rating}
+                        </div>
+                        <div class="absolute top-3 left-3 bg-rose-600 px-2.5 py-0.5 rounded-lg text-[10px] font-bold text-white uppercase tracking-wider shadow">
+                            ${m.format}
+                        </div>
+                    </div>
+                    <div class="p-5 space-y-3 flex-grow flex flex-col justify-between">
+                        <div>
+                            <span class="text-[11px] font-semibold text-rose-500 uppercase tracking-wider">${m.genre} • ${m.duration}</span>
+                            <h3 class="font-bold text-white text-base mt-1 line-clamp-1 cursor-pointer hover:text-rose-400 transition" onclick="openMovieDetail(${m.id})">${m.title}</h3>
+                        </div>
+                        <div class="flex items-center gap-2 pt-2 border-t border-darkBorder">
+                            <button onclick="openMovieDetail(${m.id})" class="flex-1 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-1.5">
+                                <i data-lucide="ticket" class="w-3.5 h-3.5"></i> Book
+                            </button>
+                            <button onclick="openTrailerModal('${m.trailerUrl}', '${m.title}')" class="p-2.5 bg-darkBg hover:bg-darkBorder border border-darkBorder text-slate-300 hover:text-white rounded-xl transition">
+                                <i data-lucide="film" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function handleSearch(val) {
+            searchQuery = val;
+            renderMovies();
+        }
+
+        function filterByFormat(format) {
+            currentFilterFormat = format;
+            ['ALL', 'IMAX', '3D', '4DX'].forEach(f => {
+                const btn = document.getElementById(`filterBtn${f}`);
+                if (btn) {
+                    if (f === format) {
+                        btn.className = "px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 text-white transition whitespace-nowrap shadow-lg shadow-rose-600/30";
+                    } else {
+                        btn.className = "px-4 py-2 rounded-xl text-xs font-semibold bg-darkCard border border-darkBorder text-slate-400 hover:text-white transition whitespace-nowrap";
+                    }
+                }
+            });
+            renderMovies();
+        }
+
+        function filterByGenre(genre) {
+            currentFilterGenre = genre;
+            document.querySelectorAll('.genre-pill').forEach(pill => {
+                if (pill.innerText.includes(genre) || (genre === 'All' && pill.innerText.includes('All'))) {
+                    pill.className = "genre-pill px-4 py-1.5 rounded-lg text-xs font-medium bg-rose-500 text-white transition whitespace-nowrap shadow";
+                } else {
+                    pill.className = "genre-pill px-4 py-1.5 rounded-lg text-xs font-medium bg-darkCard border border-darkBorder text-slate-400 hover:text-white transition whitespace-nowrap";
+                }
+            });
+            renderMovies();
+        }
+
+        // --- TRAILER MODAL ---
+        function openTrailerModal(url, title = "Movie Trailer") {
+            document.getElementById('trailerTitle').innerText = title;
+            document.getElementById('trailerIframe').src = url + "?autoplay=1";
+            document.getElementById('trailerModal').classList.remove('hidden');
+        }
+
+        function closeTrailerModal() {
+            document.getElementById('trailerIframe').src = "";
+            document.getElementById('trailerModal').classList.add('hidden');
+        }
+
+        // --- MOVIE DETAIL MODAL ---
+        function openMovieDetail(movieId) {
+            const m = moviesData.find(item => item.id === movieId);
+            if (!m) return;
+
+            document.getElementById('modalBackdrop').src = m.backdrop;
+            document.getElementById('modalPoster').src = m.poster;
+            document.getElementById('modalFormatBadge').innerText = m.format;
+            document.getElementById('modalRating').innerText = m.rating;
+            document.getElementById('modalTitle').innerText = m.title;
+            document.getElementById('modalGenreDuration').innerText = `${m.genre} • ${m.duration} • PG-13`;
+            document.getElementById('modalDescription').innerText = m.synopsis;
+            document.getElementById('modalDirector').innerText = m.director;
+            document.getElementById('modalCast').innerText = m.cast;
+
+            document.getElementById('modalBookBtn').setAttribute('onclick', `startBooking(${m.id}); closeMovieDetailModal();`);
+            document.getElementById('modalTrailerBtn').setAttribute('onclick', `openTrailerModal('${m.trailerUrl}', '${m.title}')`);
+
+            document.getElementById('movieDetailModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeMovieDetailModal() {
+            document.getElementById('movieDetailModal').classList.add('hidden');
+        }
+
+        // --- BOOKING WORKFLOW ---
+        function startBooking(movieId) {
+            activeMovie = moviesData.find(m => m.id === movieId) || moviesData[0];
+            selectedSeats = [];
+            
+            document.getElementById('bookingMoviePoster').src = activeMovie.poster;
+            document.getElementById('bookingMovieTitle').innerText = activeMovie.title;
+            document.getElementById('bookingMovieFormat').innerText = activeMovie.format;
+            document.getElementById('bookingMovieGenre').innerText = `${activeMovie.genre} • ${activeMovie.duration}`;
+            document.getElementById('summaryMovieName').innerText = activeMovie.title;
+
+            // Reset step views
+            document.getElementById('showtimeSelectionSection').classList.remove('hidden');
+            document.getElementById('seatSelectionSection').classList.add('hidden');
+            
+            updateStepIndicators(1);
+            updateSummary();
+            navigateTo('booking');
+        }
+
+        function updateStepIndicators(step) {
+            const s2Ind = document.getElementById('step2Indicator');
+            const s2Txt = document.getElementById('step2Text');
+            const s3Ind = document.getElementById('step3Indicator');
+            const s3Txt = document.getElementById('step3Text');
+
+            if (step >= 2) {
+                s2Ind.className = "w-8 h-8 rounded-full bg-rose-600 text-white flex items-center justify-center font-bold text-xs shadow";
+                s2Txt.className = "text-sm font-semibold text-white";
+            } else {
+                s2Ind.className = "w-8 h-8 rounded-full bg-darkCard border border-darkBorder text-slate-400 flex items-center justify-center font-bold text-xs";
+                s2Txt.className = "text-sm font-semibold text-slate-400";
+            }
+
+            if (step >= 3) {
+                s3Ind.className = "w-8 h-8 rounded-full bg-rose-600 text-white flex items-center justify-center font-bold text-xs shadow";
+                s3Txt.className = "text-sm font-semibold text-white";
+            } else {
+                s3Ind.className = "w-8 h-8 rounded-full bg-darkCard border border-darkBorder text-slate-400 flex items-center justify-center font-bold text-xs";
+                s3Txt.className = "text-sm font-semibold text-slate-400";
+            }
+        }
+
+        function initDateSelector() {
+            const container = document.getElementById('dateSelectorContainer');
+            container.innerHTML = '';
+            const days = ['Today', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed'];
+            const dates = ['24', '25', '26', '27', '28', '29', '30'];
+            const fullDates = ['2026-10-24', '2026-10-25', '2026-10-26', '2026-10-27', '2026-10-28', '2026-10-29', '2026-10-30'];
+
+            for (let i = 0; i < 7; i++) {
+                const isSelected = i === 0;
+                const btn = document.createElement('button');
+                btn.className = `p-3 rounded-2xl border text-center transition flex flex-col items-center justify-center ${isSelected ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-600/30' : 'bg-darkBg border-darkBorder text-slate-400 hover:border-slate-600'}`;
+                btn.setAttribute('onclick', `selectDateTab('${fullDates[i]}', '${days[i]}, Oct ${dates[i]}', this)`);
+                btn.innerHTML = `
+                    <span class="text-[10px] font-semibold uppercase">${days[i]}</span>
+                    <span class="text-lg font-black mt-0.5">${dates[i]}</span>
+                `;
+                container.appendChild(btn);
+            }
+        }
+
+        function selectDateTab(dateStr, displayStr, element) {
+            selectedDate = dateStr;
+            document.querySelectorAll('#dateSelectorContainer button').forEach(btn => {
+                btn.className = "p-3 rounded-2xl border text-center transition flex flex-col items-center justify-center bg-darkBg border-darkBorder text-slate-400 hover:border-slate-600";
+            });
+            element.className = "p-3 rounded-2xl border text-center transition flex flex-col items-center justify-center bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-600/30";
+            document.getElementById('selectedDateDisplay').innerText = displayStr;
+            updateSummaryDateTime();
+        }
+
+        function initShowtimes() {
+            const container = document.getElementById('showtimePillsContainer');
+            container.innerHTML = '';
+            const times = [
+                { time: '10:00 AM', type: 'Morning • IMAX' },
+                { time: '01:30 PM', type: 'Matinee • 3D' },
+                { time: '04:45 PM', type: 'Evening • IMAX' },
+                { time: '07:30 PM', type: 'Prime • Dolby 4DX' },
+                { time: '10:15 PM', type: 'Night • Laser 3D' }
+            ];
+
+            times.forEach((t, index) => {
+                const isSelected = index === 3; // Default 7:30 PM
+                const btn = document.createElement('button');
+                btn.className = `px-4 py-3 rounded-xl border text-left transition flex flex-col ${isSelected ? 'bg-rose-600/20 border-rose-500 text-white shadow' : 'bg-darkBg border-darkBorder text-slate-300 hover:border-slate-600'}`;
+                btn.setAttribute('onclick', `selectTimeSlot('${t.time}', this)`);
+                btn.innerHTML = `
+                    <span class="font-bold text-sm">${t.time}</span>
+                    <span class="text-[10px] text-slate-400 mt-0.5">${t.type}</span>
+                `;
+                container.appendChild(btn);
+            });
+        }
+
+        function selectTimeSlot(timeStr, element) {
+            selectedTime = timeStr;
+            document.querySelectorAll('#showtimePillsContainer button').forEach(btn => {
+                btn.className = "px-4 py-3 rounded-xl border text-left transition flex flex-col bg-darkBg border-darkBorder text-slate-300 hover:border-slate-600";
+            });
+            element.className = "px-4 py-3 rounded-xl border text-left transition flex flex-col bg-rose-600/20 border-rose-500 text-white shadow";
+            document.getElementById('selectedTimeDisplay').innerText = timeStr;
+            updateSummaryDateTime();
+        }
+
+        function updateSummaryDateTime() {
+            const dateText = document.getElementById('selectedDateDisplay').innerText;
+            document.getElementById('summaryDateTime').innerText = `${dateText}, ${selectedTime}`;
+        }
+
+        function proceedToSeatSelection() {
+            document.getElementById('showtimeSelectionSection').classList.add('hidden');
+            document.getElementById('seatSelectionSection').classList.remove('hidden');
+            updateStepIndicators(2);
+        }
+
+        function backToShowtimes() {
+            document.getElementById('seatSelectionSection').classList.add('hidden');
+            document.getElementById('showtimeSelectionSection').classList.remove('hidden');
+            updateStepIndicators(1);
+        }
+
+        // --- INTERACTIVE SEAT SELECTOR ---
+        function initSeatGrid() {
+            renderSeatRow('VIP', ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8'], 20.00);
+            renderSeatRow('VIP', ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8'], 20.00);
+
+            renderSeatRow('Club', ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10'], 16.00);
+            renderSeatRow('Club', ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8', 'D9', 'D10'], 16.00);
+            renderSeatRow('Club', ['E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9', 'E10'], 16.00);
+
+            renderSeatRow('Norm', ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12'], 12.00);
+            renderSeatRow('Norm', ['G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7', 'G8', 'G9', 'G10', 'G11', 'G12'], 12.00);
+            renderSeatRow('Norm', ['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7', 'H8', 'H9', 'H10', 'H11', 'H12'], 12.00);
+        }
+
+        function renderSeatRow(tier, seatsArray, price) {
+            const containerId = tier === 'VIP' ? 'seatRowVIP' : tier === 'Club' ? 'seatRowClub' : 'seatRowNormal';
+            const container = document.getElementById(containerId);
+            
+            const rowDiv = document.createElement('div');
+            rowDiv.className = "flex items-center justify-center space-x-1.5 sm:space-x-2";
+
+            // Row Label
+            const rowLetter = seatsArray[0][0];
+            const labelEl = document.createElement('span');
+            labelEl.className = "w-6 text-center text-xs font-bold text-slate-500 mr-2";
+            labelEl.innerText = rowLetter;
+            rowDiv.appendChild(labelEl);
+
+            seatsArray.forEach((seatId, idx) => {
+                const fullId = `${tier}-${seatId}`;
+                const isReserved = reservedSeats.includes(fullId);
+                const isSelected = selectedSeats.includes(fullId);
+
+                const seatBtn = document.createElement('button');
+                seatBtn.id = `seat-${fullId}`;
+                seatBtn.className = `w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-[10px] font-bold transition flex items-center justify-center ${
+                    isReserved ? 'bg-slate-800 text-slate-600 opacity-40 cursor-not-allowed border border-slate-700' :
+                    isSelected ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/40 scale-105 border border-rose-400' :
+                    'bg-darkBg text-slate-300 border border-darkBorder hover:border-rose-500 hover:text-white'
+                }`;
+                seatBtn.disabled = isReserved;
+                seatBtn.innerText = seatId.slice(1);
+                seatBtn.setAttribute('title', `${tier} Tier - Seat ${seatId} ($${price.toFixed(2)})`);
+                seatBtn.setAttribute('onclick', `toggleSeat('${fullId}', ${price})`);
+
+                rowDiv.appendChild(seatBtn);
+
+                // Add aisle gap in the middle
+                if (idx === Math.floor(seatsArray.length / 2) - 1) {
+                    const aisle = document.createElement('div');
+                    aisle.className = "w-4";
+                    rowDiv.appendChild(aisle);
+                }
+            });
+
+            container.appendChild(rowDiv);
+        }
+
+        function toggleSeat(seatId, price) {
+            const index = selectedSeats.indexOf(seatId);
+            if (index > -1) {
+                selectedSeats.splice(index, 1);
+            } else {
+                if (selectedSeats.length >= 8) {
+                    alert('You can select a maximum of 8 seats per booking.');
+                    return;
+                }
+                selectedSeats.push(seatId);
+            }
+
+            // Re-render seats UI efficiently
+            document.querySelectorAll('#seatRowVIP button, #seatRowClub button, #seatRowNormal button').forEach(btn => {
+                const id = btn.id.replace('seat-', '');
+                if (!reservedSeats.includes(id)) {
+                    if (selectedSeats.includes(id)) {
+                        btn.className = "w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-[10px] font-bold transition flex items-center justify-center bg-rose-600 text-white shadow-lg shadow-rose-600/40 scale-105 border border-rose-400";
+                    } else {
+                        btn.className = "w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-[10px] font-bold transition flex items-center justify-center bg-darkBg text-slate-300 border border-darkBorder hover:border-rose-500 hover:text-white";
+                    }
+                }
+            });
+
+            updateSummary();
+        }
+
+        function getSeatPrice(seatId) {
+            if (seatId.startsWith('VIP')) return 20.00;
+            if (seatId.startsWith('Club')) return 16.00;
+            return 12.00;
+        }
+
+        function updateSummary() {
+            const summarySeats = document.getElementById('summarySeats');
+            const summarySubtotal = document.getElementById('summarySubtotal');
+            const summaryFee = document.getElementById('summaryFee');
+            const summaryTotal = document.getElementById('summaryTotal');
+            const proceedBtn = document.getElementById('proceedToPaymentBtn');
+
+            if (selectedSeats.length === 0) {
+                summarySeats.innerText = "None Selected";
+                summarySubtotal.innerText = "$0.00";
+                summaryFee.innerText = "$0.00";
+                summaryTotal.innerText = "$0.00";
+
+                proceedBtn.disabled = true;
+                proceedBtn.className = "w-full py-4 bg-rose-600/50 cursor-not-allowed text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2";
+            } else {
+                summarySeats.innerText = selectedSeats.join(', ');
+                let subtotal = 0;
+                selectedSeats.forEach(s => subtotal += getSeatPrice(s));
+                const fee = subtotal * 0.12; // 12% tax & convenience fee
+                const total = subtotal + fee;
+
+                summarySubtotal.innerText = `$${subtotal.toFixed(2)}`;
+                summaryFee.innerText = `$${fee.toFixed(2)}`;
+                summaryTotal.innerText = `$${total.toFixed(2)}`;
+
+                proceedBtn.disabled = false;
+                proceedBtn.className = "w-full py-4 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl shadow-lg shadow-rose-600/40 transition flex items-center justify-center gap-2 transform hover:scale-[1.02]";
+            }
+        }
+
+        // --- CHECKOUT & PAYMENT MODAL ---
+        function openCheckoutModal() {
+            if (selectedSeats.length === 0) return;
+            let subtotal = 0;
+            selectedSeats.forEach(s => subtotal += getSeatPrice(s));
+            const total = subtotal + (subtotal * 0.12);
+            document.getElementById('checkoutTotalAmount').innerText = `$${total.toFixed(2)}`;
+            document.getElementById('checkoutModal').classList.remove('hidden');
+            updateStepIndicators(3);
+            lucide.createIcons();
+        }
+
+        function closeCheckoutModal() {
+            document.getElementById('checkoutModal').classList.add('hidden');
+        }
+
+        function selectPaymentMethod(method) {
+            ['Card', 'Upi', 'Wallet'].forEach(m => {
+                const btn = document.getElementById(`payMethod${m}`);
+                const form = document.getElementById(`paymentForm${m}`);
+                if (m.toLowerCase() === method) {
+                    btn.className = "p-3 rounded-xl border border-rose-500 bg-rose-500/10 text-white font-semibold text-xs flex flex-col items-center gap-2 transition";
+                    form.classList.remove('hidden');
+                } else {
+                    btn.className = "p-3 rounded-xl border border-darkBorder bg-darkBg text-slate-400 font-semibold text-xs flex flex-col items-center gap-2 transition hover:border-slate-600";
+                    form.classList.add('hidden');
+                }
+            });
+        }
+
+        function processPayment() {
+            const payBtn = document.getElementById('payNowBtn');
+            payBtn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Processing...`;
+            lucide.createIcons();
+
+            setTimeout(() => {
+                closeCheckoutModal();
+                payBtn.innerHTML = `<i data-lucide="shield-check" class="w-5 h-5"></i> Pay Securely`;
+                
+                // Generate booking record
+                let subtotal = 0;
+                selectedSeats.forEach(s => subtotal += getSeatPrice(s));
+                const total = subtotal + (subtotal * 0.12);
+                const bookingId = 'CP-' + Math.floor(100000 + Math.random() * 900000);
+
+                const ticketRecord = {
+                    id: bookingId,
+                    movieTitle: activeMovie.title,
+                    poster: activeMovie.poster,
+                    cinema: 'CinePulse IMAX Downtown',
+                    date: document.getElementById('selectedDateDisplay').innerText,
+                    time: selectedTime,
+                    seats: [...selectedSeats],
+                    total: total.toFixed(2),
+                    timestamp: new Date().toLocaleString()
+                };
+
+                bookedTicketsHistory.unshift(ticketRecord);
+                localStorage.setItem('cinepulse_tickets', JSON.stringify(bookedTicketsHistory));
+                updateTicketBadge();
+
+                // Populate success ticket modal
+                document.getElementById('ticketBookingId').innerText = bookingId;
+                document.getElementById('ticketPoster').src = activeMovie.poster;
+                document.getElementById('ticketMovieTitle').innerText = activeMovie.title;
+                document.getElementById('ticketCinema').innerText = 'CinePulse IMAX Downtown';
+                document.getElementById('ticketDate').innerText = document.getElementById('selectedDateDisplay').innerText;
+                document.getElementById('ticketTime').innerText = selectedTime;
+                document.getElementById('ticketSeatsList').innerText = selectedSeats.join(', ');
+                document.getElementById('ticketTotalPrice').innerText = `$${total.toFixed(2)}`;
+
+                document.getElementById('successTicketModal').classList.remove('hidden');
+
+                // Trigger confetti
+                confetti({
+                    particleCount: 120,
+                    spread: 80,
+                    origin: { y: 0.6 }
+                });
+
+                // Mark seats as reserved
+                selectedSeats.forEach(s => reservedSeats.push(s));
+                selectedSeats = [];
+                lucide.createIcons();
+            }, 1500);
+        }
+
+        function downloadTicketReceipt() {
+            alert('Ticket receipt downloaded successfully to your device!');
+        }
+
+        // --- MY TICKETS DRAWER ---
+        function openMyTicketsModal() {
+            const container = document.getElementById('myTicketsListContainer');
+            container.innerHTML = '';
+            document.getElementById('myTicketsCount').innerText = bookedTicketsHistory.length;
+
+            if (bookedTicketsHistory.length === 0) {
+                container.innerHTML = `<div class="py-12 text-center text-slate-500"><i data-lucide="ticket" class="w-12 h-12 mx-auto mb-3 opacity-30"></i><p class="text-sm font-semibold">No booked tickets found.</p></div>`;
+            } else {
+                bookedTicketsHistory.forEach(t => {
+                    const item = document.createElement('div');
+                    item.className = "bg-darkBg border border-darkBorder rounded-2xl p-4 flex gap-4 items-center justify-between shadow";
+                    item.innerHTML = `
+                        <div class="flex gap-3 items-center">
+                            <img src="${t.poster}" alt="Poster" class="w-14 h-20 object-cover rounded-xl shadow">
+                            <div class="space-y-1">
+                                <span class="text-[10px] font-mono text-rose-500">${t.id}</span>
+                                <h4 class="font-bold text-white text-sm">${t.movieTitle}</h4>
+                                <p class="text-[11px] text-slate-400">${t.date} • ${t.time}</p>
+                                <span class="text-[10px] font-semibold text-emerald-400 block">Seats: ${t.seats.join(', ')}</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-sm font-black text-white">$${t.total}</span>
+                            <span class="text-[10px] text-slate-500 block">Paid</span>
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+            }
+
+            document.getElementById('myTicketsModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeMyTicketsModal() {
+            document.getElementById('myTicketsModal').classList.add('hidden');
+        }
+
+        function updateTicketBadge() {
+            const badge = document.getElementById('ticketCountBadge');
+            if (bookedTicketsHistory.length > 0) {
+                badge.innerText = bookedTicketsHistory.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function subscribeNewsletter() {
+            alert('Thank you for subscribing to CinePulse updates!');
+        }
+    </script>
+</body>
+</html>
